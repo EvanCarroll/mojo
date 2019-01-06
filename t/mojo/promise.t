@@ -134,7 +134,7 @@ is_deeply \@results, ['pass'], 'promise resolved';
 
 # Clone
 my $loop = Mojo::IOLoop->new;
-$promise  = Mojo::Promise->new(ioloop => $loop)->resolve('failed');
+$promise = Mojo::Promise->new(ioloop => $loop)->resolve('failed');
 $promise2 = $promise->clone;
 (@results, @errors) = ();
 $promise2->then(sub { @results = @_ }, sub { @errors = @_ });
@@ -180,6 +180,16 @@ $promise->resolve('first');
 Mojo::IOLoop->one_tick;
 is_deeply \@results, [], 'promises not resolved';
 is_deeply \@errors, ['second'], 'promise rejected';
+
+# Timeout
+(@errors, @results) = @_;
+$promise = Mojo::Promise->timeout(0.25 => 'Timeout1');
+$promise2 = Mojo::Promise->new->timeout(0.025 => 'Timeout2');
+$promise3
+  = Mojo::Promise->race($promise, $promise2)->then(sub { @results = @_ })
+  ->catch(sub { @errors = @_ })->wait;
+is_deeply \@results, [], 'promises not resolved';
+is_deeply \@errors, ['Timeout2'], 'promise rejected';
 
 # All
 $promise  = Mojo::Promise->new->then(sub {@_});

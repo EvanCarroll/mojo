@@ -63,6 +63,12 @@ sub then {
   return $new;
 }
 
+sub timeout {
+  my ($self, $after, $err) = (blessed $_[0] ? shift->clone : shift->new, @_);
+  $self->ioloop->timer($after => sub { $self->reject($err) });
+  return $self;
+}
+
 sub wait {
   my $self = shift;
   return if (my $loop = $self->ioloop)->is_running;
@@ -347,6 +353,14 @@ L<Mojo::Promise> object resolving to the return value of the called handler.
       return "This is bad: $reason[0]";
     }
   );
+
+=head2 timeout
+
+  my $new = Mojo::Promise->timeout(5 => 'Timeout!');
+  my $new = $promise->timeout(5 => 'Timeout!');
+
+Create a new L<Mojo::Promise> that will be rejected after a given amount of
+time in seconds.
 
 =head2 wait
 
