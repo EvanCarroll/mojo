@@ -64,7 +64,8 @@ sub then {
 }
 
 sub timeout {
-  my ($self, $after, $err) = (blessed $_[0] ? shift->clone : shift->new, @_);
+  my ($self, $after, $err)
+    = (ref $_[0] ? shift : shift->new, @_, 'Promise timeout');
   $self->ioloop->timer($after => sub { $self->reject($err) });
   return $self;
 }
