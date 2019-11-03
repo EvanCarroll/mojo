@@ -186,7 +186,25 @@ sub monkey_patch {
   my ($class, %patch) = @_;
   no strict 'refs';
   no warnings 'redefine';
-  *{"${class}::$_"} = set_subname("${class}::$_", $patch{$_}) for keys %patch;
+  for my $k ( keys %patch ) {
+    # CPANEL: We remove the call to set_subname and force it into runtime
+    # this permits execution under the perl compiler
+    # In order to do this we need to use a closure and `goto CODEREF`
+    # In order to do that, we must set the prototype of the closure.
+    # That closure needs the same name to pass t/mojo/util.t
+    # *{"${class}::$k"} = set_subname("${class}::$k", $patch{$k});
+		# https://stackoverflow.com/a/58684777/124486
+    *{"${class}::$k"} = Sub::Util::set_prototype(
+      Sub::Util::prototype( $patch{$k} ),
+      Sub::Util::set_subname(
+        "${class}::$k",
+        sub {
+          my $cr = Sub::Util::set_subname("${class}::$k", $patch{$k});
+          goto $cr;
+        }
+      )
+    );
+  }
 }
 
 # Direct translation of RFC 3492
